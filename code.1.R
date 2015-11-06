@@ -107,7 +107,8 @@ trans <- function(a,b){
         m$otherSearches  <- replaceNA(as.numeric(isn(ds[[ thedate ]]['other'],0)),0)
 
                                         # If missing, then the value is -1
-        m$isDefaultBrowser <- isn(theday$org.mozilla.appInfo.appinfo$isDefaultBrowser,-1)
+                                        # Oddly enough can be many values in a day, take the last value
+        m$isDefaultBrowser <- tail(isn(theday$org.mozilla.appInfo.appinfo$isDefaultBrowser,-1),1)
 
         m$buildId <- tail(vb$b,1)
         m$fxversion <- tail(vb$v,1)
@@ -115,12 +116,13 @@ trans <- function(a,b){
                                         # Taken from
                                         # https://hg.mozilla.org/mozilla-central/file/tip/services/healthreport/docs/dataformat.rst#l1076
                                         # if missing (and it will be for old FHR versions) replace with 0
-        m$numCrashes <- isn(theday$org.mozilla.crashes.crashes$"main-crash",0)
+                                        # preventive - multiple numbers? should only be one
+        m$numCrashes <- tail(isn(theday$org.mozilla.crashes.crashes$"main-crash",0),1)
 
                                         # Taken from
                                         # https://hg.mozilla.org/mozilla-central/file/tip/services/healthreport/docs/dataformat.rst#l1076
                                         # if missing (and it will be for old FHR versions) replace with 0
-        m$numPluginHangs <- isn(theday$org.mozilla.crashes.crashes$"plugin-hang",0)
+        m$numPluginHangs <- tail(isn(theday$org.mozilla.crashes.crashes$"plugin-hang",0),1)
 
         m$activityDate <- thedate
 
@@ -142,7 +144,7 @@ O <- local({
 })
 
 res <- rhwatch(map    = function(a,b) trans(a, fromJSON(b))
-             , reduce = 400
+             , reduce = 1000
              , input  = sqtxt(sprintf("%s/v2",I))
              , output = O$r
              , debug  = 'collect'
@@ -159,13 +161,20 @@ res <- rhwatch(map    = function(a,b) trans(a, fromJSON(b))
              })
              )
 
-toText <- function (i, o)
+## let's try partitioning
+## h <- rhwatch(map=function(a,b){
+##     rhcollect(c(a, b$activityDate), b)
+## },reduce=rhoptions()$temp$identity, input="/user/sguha/fhr/samples/exec/exec-2015-10-26/r/part-r-00998", partition=list(lims=c(1:2), type='string'),read=FALSE)
+
+
+toText <- function (i, o,red=0)
 {
     y <- rhwatch(map = function(a, b) {
-        rhcollect(NULL, b)
+        rhcollect(a, b)
     }
-  , reduce = 0
+  , reduce = red
   , input = i
+  ## , mapred = list(mapred.output.compress="false",mapreduce.output.fileoutputformat.compress="false")
   , output = rhfmt(type = "text", folder = o,
                    writeKey = FALSE, field.sep = "\t", stringquote = "")
   , read = FALSE)
@@ -175,4 +184,4 @@ toText <- function (i, o)
     o
 }
 
-toText(O$r,O$t)
+toText(O$r,O$t,red=0)

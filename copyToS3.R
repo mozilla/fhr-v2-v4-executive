@@ -26,7 +26,7 @@ system(sprintf("aws s3 rm   s3://mozillametricsfhrsamples/lock"))
 
 source("~/prefix.R")
 
-prefix <- "/user/sguha/fhr/samples/exec/exec-2015-10-12/"
+prefix <- "/user/sguha/fhr/samples/exec/exec-2015-10-26/"
 xt <- tempfile()
 
 
@@ -34,8 +34,9 @@ x="t"
 Sys.setenv(HADOOP_HOME="")
 hdfs.setwd(sprintf("%s%s",prefix,x))
 z <- rhls(".")$file
-system(sprintf("aws s3 rm --recursive s3://mozillametricsfhrsamples/execComp/"))
+system(sprintf("aws s3 rm --recursive s3://mozillametricsfhrsamples/tmp/exec-2015-10-26/"))
 for(af in z){
-        system(sprintf("hadoop dfs -text %s > /tmp/temp",af))
-        system(sprintf("aws s3 cp %s s3://mozillametricsfhrsamples/execComp/%s","/tmp/temp",gsub(".deflate",".txt",basename(af))))
+    system("rm -rf /tmp/temp")
+    system(sprintf("hadoop dfs -get %s  /tmp/temp",af))
+    system(sprintf("aws s3 cp %s s3://mozillametricsfhrsamples/tmp/exec-2015-10-26/%s","/tmp/temp",basename(af)))
 }
