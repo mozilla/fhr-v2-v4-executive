@@ -98,7 +98,7 @@ trans <- function(a,b){
 
                                         # Taken from
                                         # https://github.com/mozilla/fhr-r-rollups/blob/0990e71b28c190e486c8166220b20aefcb2451a1/lib/activity.R#L134
-        m$usageHours <- totalActivity(list(theday))$activesec/3600
+        m$usageHours <- totalActivity(list(theday))$totalsec/3600
 
                                         # Searches
         m$googleSearches <- replaceNA(as.numeric(isn(ds[[ thedate ]]['google'],0)),0)
